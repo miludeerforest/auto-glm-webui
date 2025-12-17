@@ -14,6 +14,64 @@
 
 ## 懒人版快速安装
 
+---
+
+## 🚀 Web Launcher 新功能 (Fork 增强版)
+
+本仓库基于原版 Open-AutoGLM 增加了 **Web 可视化控制界面**，支持以下特性：
+
+### ✨ 主要功能
+
+| 功能 | 说明 |
+|------|------|
+| **多设备控制** | 同时管理和控制多台 Android 设备 |
+| **WiFi 无线调试** | 支持 Android 11+ 配对码连接和传统 TCP/IP 模式 |
+| **任务模板** | 保存常用任务指令，一键调用 |
+| **实时日志** | WebSocket 实时显示每个设备的执行日志 |
+| **设备记忆** | 自动记住远程设备，启动时自动重连 |
+| **一键启动** | 双击 `start_launcher.bat` 即可启动 |
+
+### 📦 快速开始
+
+```bash
+# 1. 安装依赖
+pip install fastapi uvicorn websockets
+
+# 2. 启动 Web Launcher
+双击 start_launcher.bat
+# 或手动运行: python launcher_app.py
+
+# 3. 在浏览器中访问
+http://127.0.0.1:8000
+```
+
+### 📱 WiFi 连接方式
+
+**方式一: Android 11+ 无线调试**
+1. 手机：设置 → 开发者选项 → 无线调试 → 开启
+2. 点击"使用配对码配对设备"
+3. 在 Web 界面输入配对地址和配对码
+4. 配对成功后，使用"IP地址和端口"进行连接
+
+**方式二: 传统方式 (需USB)**
+1. USB 连接手机并授权
+2. 点击设备卡片上的"📶 启用WiFi调试"
+3. 拔掉 USB，继续无线控制
+
+### 📁 配置文件说明
+
+| 文件 | 说明 |
+|------|------|
+| `launcher/config.json` | API 设置 (需自行配置 API Key) |
+| `launcher/devices.json` | 已保存的远程设备地址 |
+| `launcher/templates.json` | 任务模板 |
+
+> ⚠️ 这些配置文件已添加到 `.gitignore`，不会被提交到仓库
+
+---
+
+## 懒人版快速安装（原版）
+
 你可以使用Claude Code，配置 [GLM Coding Plan](https://bigmodel.cn/glm-coding) 后，输入以下提示词，快速部署本项目。
 
 ```

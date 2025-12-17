@@ -201,6 +201,25 @@
             box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
         }
 
+        .remove-device-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: auto;
+            opacity: 0.6;
+            transition: all 0.2s;
+        }
+
+        .remove-device-btn:hover {
+            background: var(--error-color);
+            color: white;
+            opacity: 1;
+        }
+
         /* Connect Device */
         .connect-section {
             display: flex;
@@ -925,6 +944,7 @@
             container.innerHTML = devices.map(d => {
                 // Check if this is a USB device (no colon in ID = not an IP address)
                 const isUsbDevice = !d.device_id.includes(':');
+                const isWifiDevice = d.device_id.includes(':');
 
                 return `
                 <div class="device-card ${selectedDeviceId === d.device_id ? 'selected' : ''}" 
@@ -932,6 +952,7 @@
                     <div class="device-header">
                         <span class="status-dot ${d.status}"></span>
                         <span class="device-id">${d.device_id}</span>
+                        ${isWifiDevice ? `<button class="remove-device-btn" onclick="event.stopPropagation(); removeDevice('${d.device_id}')" title="断开连接">✕</button>` : ''}
                     </div>
                     ${d.model ? `<div class="device-model">${d.model}</div>` : ''}
                     ${d.current_task ? `<div class="device-task">📋 ${d.current_task}</div>` : ''}
@@ -959,6 +980,28 @@
                 }
             } catch (e) {
                 alert('启用WiFi调试失败: ' + e);
+            }
+        }
+
+        async function removeDevice(deviceId) {
+            if (!confirm(`确定断开并移除设备 ${deviceId}？`)) return;
+
+            try {
+                const res = await fetch(`/api/devices/${deviceId}/disconnect`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    if (selectedDeviceId === deviceId) {
+                        selectedDeviceId = null;
+                    }
+                    refreshDevices();
+                } else {
+                    alert('移除失败: ' + data.message);
+                }
+            } catch (e) {
+                alert('移除失败: ' + e);
             }
         }
 
