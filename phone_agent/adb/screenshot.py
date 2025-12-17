@@ -47,6 +47,8 @@ def get_screenshot(device_id: str | None = None, timeout: int = 10) -> Screensho
             capture_output=True,
             text=True,
             timeout=timeout,
+            encoding='utf-8',
+            errors='replace',
         )
 
         # Check for screenshot failure (sensitive screen)
@@ -60,6 +62,8 @@ def get_screenshot(device_id: str | None = None, timeout: int = 10) -> Screensho
             capture_output=True,
             text=True,
             timeout=5,
+            encoding='utf-8',
+            errors='replace',
         )
 
         if not os.path.exists(temp_path):

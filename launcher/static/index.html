@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open-AutoGLM Multi-Device Launcher</title>
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --success-color: #22c55e;
+            --error-color: #ef4444;
+            --warning-color: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            grid-template-rows: auto 1fr auto;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            height: calc(100vh - 40px);
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        .card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Sidebar - Device List */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .sidebar h2 {
+            margin: 0 0 12px 0;
+            font-size: 1rem;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .refresh-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .refresh-btn:hover {
+            background: var(--border-color);
+            color: var(--text-color);
+        }
+
+        .device-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .device-card {
+            padding: 12px;
+            border-radius: 10px;
+            background: var(--bg-color);
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .device-card:hover {
+            border-color: var(--border-color);
+        }
+
+        .device-card.selected {
+            border-color: var(--primary-color);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .device-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-dot.online {
+            background: var(--success-color);
+            box-shadow: 0 0 8px var(--success-color);
+        }
+
+        .status-dot.running {
+            background: var(--warning-color);
+            box-shadow: 0 0 8px var(--warning-color);
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-dot.offline {
+            background: var(--text-muted);
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .device-id {
+            font-weight: 500;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .device-model {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .device-task {
+            font-size: 0.75rem;
+            color: var(--warning-color);
+            margin-top: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .wifi-btn {
+            width: 100%;
+            margin-top: 8px;
+            padding: 6px 10px;
+            font-size: 0.75rem;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .wifi-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Connect Device */
+        .connect-section {
+            display: flex;
+            gap: 8px;
+        }
+
+        .connect-section input {
+            flex: 1;
+            padding: 8px 12px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-color);
+            font-size: 0.85rem;
+        }
+
+        .connect-section input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .connect-section button {
+            padding: 8px 16px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .connect-section button:hover {
+            background: var(--primary-hover);
+        }
+
+        /* Guide Section */
+        .guide-section {
+            margin-top: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .guide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: var(--bg-color);
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            transition: color 0.2s;
+        }
+
+        .guide-header:hover {
+            color: var(--text-color);
+        }
+
+        .guide-toggle {
+            font-size: 0.7rem;
+            transition: transform 0.3s;
+        }
+
+        .guide-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .guide-content {
+            padding: 12px;
+            background: rgba(15, 23, 42, 0.5);
+            display: block;
+        }
+
+        .guide-content.hidden {
+            display: none;
+        }
+
+        .guide-step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .step-num {
+            width: 20px;
+            height: 20px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .guide-note {
+            margin: 8px 0 0;
+            padding: 8px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 6px;
+            font-size: 0.7rem;
+            color: var(--primary-color);
+        }
+
+        .guide-method {
+            margin-bottom: 12px;
+        }
+
+        .guide-method strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.75rem;
+            color: var(--text-color);
+        }
+
+        .guide-divider {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            margin: 12px 0;
+        }
+
+        .pair-section {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .pair-section input {
+            padding: 8px 10px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-color);
+            font-size: 0.75rem;
+        }
+
+        .pair-section input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .pair-section button {
+            padding: 8px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .pair-section button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+        }
+
+        /* Main Panel */
+        .main-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-height: 0;
+        }
+
+        /* Settings Row */
+        .settings-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .form-group input {
+            padding: 10px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-color);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        /* Templates Section */
+        .templates-section {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .templates-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .add-template-btn {
+            background: transparent;
+            border: 1px dashed var(--border-color);
+            color: var(--text-muted);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .add-template-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .templates-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .template-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: var(--primary-color);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .template-chip:hover {
+            background: rgba(99, 102, 241, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .template-chip .delete-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.7rem;
+            padding: 0 2px;
+            opacity: 0.6;
+        }
+
+        .template-chip .delete-btn:hover {
+            color: var(--error-color);
+            opacity: 1;
+        }
+
+        /* Task Section */
+        .task-section {
+            display: flex;
+            gap: 12px;
+        }
+
+        .task-section textarea {
+            flex: 1;
+            padding: 12px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-color);
+            resize: none;
+            height: 80px;
+            font-family: inherit;
+        }
+
+        .task-section textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .task-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 140px;
+        }
+
+        .btn {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--primary-hover);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #16a34a;
+        }
+
+        .btn-danger {
+            background: var(--error-color);
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #dc2626;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+
+        .btn-outline:hover:not(:disabled) {
+            background: var(--border-color);
+        }
+
+        /* Logs Section */
+        .logs-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .logs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .logs-header h3 {
+            margin: 0;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .clear-logs-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .clear-logs-btn:hover {
+            background: var(--border-color);
+        }
+
+        .logs-container {
+            flex: 1;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            overflow-y: auto;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.8rem;
+            white-space: pre-wrap;
+            line-height: 1.5;
+        }
+
+        /* No Device Selected */
+        .no-device {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            gap: 12px;
+        }
+
+        .no-device svg {
+            width: 64px;
+            height: 64px;
+            opacity: 0.5;
+        }
+
+        /* Save indicator */
+        .save-indicator {
+            font-size: 0.75rem;
+            color: var(--success-color);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .save-indicator.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🤖 Open-AutoGLM Multi-Device Launcher</h1>
+            <span class="save-indicator" id="saveIndicator">✓ Settings saved</span>
+        </div>
+
+        <!-- Sidebar - Device List -->
+        <div class="sidebar card">
+            <h2>
+                设备列表 Devices
+                <button class="refresh-btn" onclick="refreshDevices()">🔄 刷新</button>
+            </h2>
+
+            <div class="device-list" id="deviceList">
+                <!-- Devices will be populated here -->
+            </div>
+
+            <div class="connect-section">
+                <input type="text" id="connectAddress" placeholder="IP:port (e.g. 192.168.1.100:5555)">
+                <button onclick="connectDevice()">连接</button>
+            </div>
+
+            <!-- WiFi Debug Guide -->
+            <div class="guide-section">
+                <div class="guide-header" onclick="toggleGuide()">
+                    <span>📖 WiFi 调试指南</span>
+                    <span class="guide-toggle" id="guideToggle">▼</span>
+                </div>
+                <div class="guide-content" id="guideContent">
+                    <!-- Android 11+ Method -->
+                    <div class="guide-method">
+                        <strong>🆕 Android 11+ 无线调试</strong>
+                        <div class="guide-step"><span class="step-num">1</span><span>设置 → 开发者选项 → 无线调试 → 开启</span></div>
+                        <div class="guide-step"><span class="step-num">2</span><span>点击"使用配对码配对设备"</span></div>
+                        <div class="guide-step"><span class="step-num">3</span><span>在下方输入 IP:端口 和配对码</span></div>
+                    </div>
+
+                    <!-- Pairing Section -->
+                    <div class="pair-section">
+                        <input type="text" id="pairAddress" placeholder="配对地址 (如 192.168.1.100:37123)">
+                        <input type="text" id="pairCode" placeholder="配对码 (6位数字)">
+                        <button onclick="pairDevice()">🔗 配对</button>
+                    </div>
+
+                    <div class="guide-divider">━━━ 或者 ━━━</div>
+
+                    <!-- Traditional Method -->
+                    <div class="guide-method">
+                        <strong>📱 传统方式 (需USB)</strong>
+                        <div class="guide-step"><span class="step-num">1</span><span>USB 连接手机并授权调试</span></div>
+                        <div class="guide-step"><span class="step-num">2</span><span>点击设备卡片上的"📶 启用WiFi调试"</span></div>
+                        <div class="guide-step"><span class="step-num">3</span><span>拔掉 USB，继续无线控制</span></div>
+                    </div>
+
+                    <p class="guide-note">💡 配对成功后，下次启动会自动重连</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Panel -->
+        <div class="main-panel card">
+            <!-- Settings Row -->
+            <div class="settings-row">
+                <div class="form-group">
+                    <label>API Base URL</label>
+                    <input type="text" id="baseUrl" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label>API Key</label>
+                    <input type="password" id="apiKey" placeholder="sk-...">
+                </div>
+                <div class="form-group">
+                    <label>Model</label>
+                    <input type="text" id="modelName" placeholder="autoglm-phone">
+                </div>
+                <div class="form-group">
+                    <label>Max Steps</label>
+                    <input type="number" id="maxSteps" value="100">
+                </div>
+            </div>
+
+            <!-- Task Templates -->
+            <div class="templates-section">
+                <div class="templates-header">
+                    <span>📋 任务模板</span>
+                    <button class="add-template-btn" onclick="saveAsTemplate()">+ 保存当前</button>
+                </div>
+                <div class="templates-list" id="templatesList">
+                    <!-- Templates will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Task Section -->
+            <div class="task-section">
+                <textarea id="taskInput" placeholder="输入任务指令，或从上方模板选择..."></textarea>
+                <div class="task-buttons">
+                    <button class="btn btn-primary" id="runBtn" onclick="runOnSelected()">
+                        ▶ 运行选中
+                    </button>
+                    <button class="btn btn-success" onclick="runOnAll()">
+                        ▶▶ 全部运行
+                    </button>
+                    <button class="btn btn-danger" id="stopBtn" onclick="stopSelected()">
+                        ⏹ 停止选中
+                    </button>
+                    <button class="btn btn-outline" onclick="stopAll()">
+                        ⏹⏹ 全部停止
+                    </button>
+                </div>
+            </div>
+
+            <!-- Logs Section -->
+            <div class="logs-section">
+                <div class="logs-header">
+                    <h3 id="logsTitle">运行日志 Logs</h3>
+                    <button class="clear-logs-btn" onclick="clearLogs()">清空 Clear</button>
+                </div>
+                <div class="logs-container" id="logsContainer">
+                    <div class="no-device" id="noDeviceMsg">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                            <line x1="12" y1="18" x2="12" y2="18" />
+                        </svg>
+                        <span>选择左侧设备以查看日志</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let devices = [];
+        let selectedDeviceId = null;
+        let websockets = {};  // device_id -> WebSocket
+        let deviceLogs = {};  // device_id -> log string
+
+        // ============ Settings ============
+
+        async function loadSettings() {
+            try {
+                const res = await fetch('/api/settings');
+                const data = await res.json();
+                document.getElementById('baseUrl').value = data.base_url || '';
+                document.getElementById('apiKey').value = data.api_key || '';
+                document.getElementById('modelName').value = data.model || '';
+                document.getElementById('maxSteps').value = data.max_steps || 100;
+            } catch (e) {
+                console.error("Failed to load settings", e);
+            }
+        }
+
+        async function saveSettings() {
+            const settings = {
+                base_url: document.getElementById('baseUrl').value,
+                api_key: document.getElementById('apiKey').value,
+                model: document.getElementById('modelName').value,
+                max_steps: parseInt(document.getElementById('maxSteps').value) || 100
+            };
+
+            try {
+                await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+                showSaved();
+            } catch (e) {
+                console.error("Failed to save settings", e);
+            }
+        }
+
+        function showSaved() {
+            const indicator = document.getElementById('saveIndicator');
+            indicator.classList.add('show');
+            setTimeout(() => indicator.classList.remove('show'), 2000);
+        }
+
+        // Auto-save settings
+        ['baseUrl', 'apiKey', 'modelName', 'maxSteps'].forEach(id => {
+            document.getElementById(id).addEventListener('input', debounce(saveSettings, 1000));
+        });
+
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func(...args), wait);
+            };
+        }
+
+        // ============ Task Templates ============
+
+        let templates = [];
+
+        async function loadTemplates() {
+            try {
+                const res = await fetch('/api/templates');
+                const data = await res.json();
+                templates = data.templates || [];
+                renderTemplates();
+            } catch (e) {
+                console.error("Failed to load templates", e);
+            }
+        }
+
+        function renderTemplates() {
+            const container = document.getElementById('templatesList');
+            if (templates.length === 0) {
+                container.innerHTML = '<span style="color: var(--text-muted); font-size: 0.75rem;">暂无模板，输入任务后点击"保存当前"添加</span>';
+                return;
+            }
+            container.innerHTML = templates.map(t => `
+                <div class="template-chip" onclick="useTemplate('${t.id}')">
+                    <span>${t.name}</span>
+                    <button class="delete-btn" onclick="event.stopPropagation(); deleteTemplate('${t.id}')">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function useTemplate(id) {
+            const t = templates.find(t => t.id === id);
+            if (t) {
+                document.getElementById('taskInput').value = t.task;
+            }
+        }
+
+        async function saveAsTemplate() {
+            const task = document.getElementById('taskInput').value;
+            if (!task) {
+                alert('请先输入任务内容');
+                return;
+            }
+            const name = prompt('请输入模板名称：');
+            if (!name) return;
+
+            try {
+                await fetch('/api/templates', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, task })
+                });
+                loadTemplates();
+            } catch (e) {
+                alert('保存失败: ' + e);
+            }
+        }
+
+        async function deleteTemplate(id) {
+            if (!confirm('确定删除此模板？')) return;
+            try {
+                await fetch(`/api/templates/${id}`, { method: 'DELETE' });
+                loadTemplates();
+            } catch (e) {
+                alert('删除失败: ' + e);
+            }
+        }
+
+        // ============ Devices ============
+
+
+        async function refreshDevices() {
+            try {
+                const res = await fetch('/api/devices');
+                const data = await res.json();
+                devices = data.devices || [];
+                renderDeviceList();
+            } catch (e) {
+                console.error("Failed to refresh devices", e);
+            }
+        }
+
+        function renderDeviceList() {
+            const container = document.getElementById('deviceList');
+
+            if (devices.length === 0) {
+                container.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 20px;">没有发现设备<br>No devices found</div>';
+                return;
+            }
+
+            container.innerHTML = devices.map(d => {
+                // Check if this is a USB device (no colon in ID = not an IP address)
+                const isUsbDevice = !d.device_id.includes(':');
+
+                return `
+                <div class="device-card ${selectedDeviceId === d.device_id ? 'selected' : ''}" 
+                     onclick="selectDevice('${d.device_id}')">
+                    <div class="device-header">
+                        <span class="status-dot ${d.status}"></span>
+                        <span class="device-id">${d.device_id}</span>
+                    </div>
+                    ${d.model ? `<div class="device-model">${d.model}</div>` : ''}
+                    ${d.current_task ? `<div class="device-task">📋 ${d.current_task}</div>` : ''}
+                    ${isUsbDevice && d.status === 'online' ? `
+                        <button class="wifi-btn" onclick="event.stopPropagation(); enableWifiDebug('${d.device_id}')">
+                            📶 启用WiFi调试
+                        </button>
+                    ` : ''}
+                </div>
+            `}).join('');
+        }
+
+        async function enableWifiDebug(deviceId) {
+            try {
+                const res = await fetch(`/api/devices/${deviceId}/wifi-debug`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    alert('✅ ' + data.message);
+                    refreshDevices();
+                } else {
+                    alert('❌ ' + data.message);
+                }
+            } catch (e) {
+                alert('启用WiFi调试失败: ' + e);
+            }
+        }
+
+        function selectDevice(deviceId) {
+            selectedDeviceId = deviceId;
+            renderDeviceList();
+
+            // Update logs title
+            document.getElementById('logsTitle').textContent = `日志 - ${deviceId}`;
+
+            // Show logs for this device
+            const logsContainer = document.getElementById('logsContainer');
+            document.getElementById('noDeviceMsg').style.display = 'none';
+            logsContainer.textContent = deviceLogs[deviceId] || '';
+
+            // Connect WebSocket if not already connected
+            connectWebSocket(deviceId);
+        }
+
+        async function connectDevice() {
+            const address = document.getElementById('connectAddress').value;
+            if (!address) return;
+
+            try {
+                const res = await fetch('/api/devices/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    document.getElementById('connectAddress').value = '';
+                    refreshDevices();
+                } else {
+                    alert('连接失败: ' + data.message);
+                }
+            } catch (e) {
+                alert('连接失败: ' + e);
+            }
+        }
+
+        async function pairDevice() {
+            const address = document.getElementById('pairAddress').value;
+            const code = document.getElementById('pairCode').value;
+
+            if (!address || !code) {
+                alert('请输入配对地址和配对码');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/devices/pair', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address, code })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    alert('✅ ' + data.message);
+                    document.getElementById('pairAddress').value = '';
+                    document.getElementById('pairCode').value = '';
+                    refreshDevices();
+                } else {
+                    alert('❌ ' + data.message);
+                }
+            } catch (e) {
+                alert('配对失败: ' + e);
+            }
+        }
+
+        // ============ WebSocket ============
+
+        function connectWebSocket(deviceId) {
+            if (websockets[deviceId]) return;
+
+            const ws = new WebSocket(`ws://${window.location.host}/ws/logs/${deviceId}`);
+
+            ws.onmessage = (event) => {
+                if (!deviceLogs[deviceId]) deviceLogs[deviceId] = '';
+                deviceLogs[deviceId] += event.data;
+
+                // Update display if this device is selected
+                if (selectedDeviceId === deviceId) {
+                    const logsContainer = document.getElementById('logsContainer');
+                    logsContainer.textContent = deviceLogs[deviceId];
+                    logsContainer.scrollTop = logsContainer.scrollHeight;
+                }
+            };
+
+            ws.onclose = () => {
+                delete websockets[deviceId];
+                // Reconnect after delay
+                setTimeout(() => {
+                    if (selectedDeviceId === deviceId) {
+                        connectWebSocket(deviceId);
+                    }
+                }, 2000);
+            };
+
+            websockets[deviceId] = ws;
+        }
+
+        // ============ Task Execution ============
+
+        async function runOnSelected() {
+            if (!selectedDeviceId) {
+                alert('请先选择一个设备');
+                return;
+            }
+
+            const task = document.getElementById('taskInput').value;
+            if (!task) {
+                alert('请输入任务指令');
+                return;
+            }
+
+            // Ensure WebSocket is connected BEFORE starting task
+            connectWebSocket(selectedDeviceId);
+
+            deviceLogs[selectedDeviceId] = 'Starting task...\n';
+            const logsContainer = document.getElementById('logsContainer');
+            logsContainer.textContent = deviceLogs[selectedDeviceId];
+
+            try {
+                const res = await fetch(`/api/run/${selectedDeviceId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task })
+                });
+                const data = await res.json();
+
+                if (data.status === 'error') {
+                    alert('Error: ' + data.message);
+                } else {
+                    refreshDevices();
+                }
+            } catch (e) {
+                alert('请求失败: ' + e);
+            }
+        }
+
+        async function runOnAll() {
+            const task = document.getElementById('taskInput').value;
+            if (!task) {
+                alert('请输入任务指令');
+                return;
+            }
+
+            // Connect WebSockets for all devices BEFORE starting tasks
+            devices.forEach(d => {
+                if (d.status === 'online') {
+                    connectWebSocket(d.device_id);
+                    deviceLogs[d.device_id] = 'Starting task...\n';
+                }
+            });
+
+            try {
+                const res = await fetch('/api/run-all', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task })
+                });
+                const data = await res.json();
+                refreshDevices();
+
+                // Select first running device if none selected
+                if (!selectedDeviceId && data.results.length > 0) {
+                    selectDevice(data.results[0].device_id);
+                }
+            } catch (e) {
+                alert('请求失败: ' + e);
+            }
+        }
+
+        async function stopSelected() {
+            if (!selectedDeviceId) return;
+
+            try {
+                await fetch(`/api/stop/${selectedDeviceId}`, { method: 'POST' });
+                deviceLogs[selectedDeviceId] += '\n[Stopped by user]\n';
+                document.getElementById('logsContainer').textContent = deviceLogs[selectedDeviceId];
+                refreshDevices();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function stopAll() {
+            try {
+                await fetch('/api/stop-all', { method: 'POST' });
+                refreshDevices();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function clearLogs() {
+            if (selectedDeviceId) {
+                deviceLogs[selectedDeviceId] = '';
+                document.getElementById('logsContainer').textContent = '';
+            }
+        }
+
+        function toggleGuide() {
+            const content = document.getElementById('guideContent');
+            const toggle = document.getElementById('guideToggle');
+            content.classList.toggle('hidden');
+            toggle.classList.toggle('collapsed');
+        }
+
+        // ============ Init ============
+
+        loadSettings();
+        loadTemplates();
+        refreshDevices();
+
+        // Auto-refresh devices every 5 seconds
+        setInterval(refreshDevices, 5000);
+    </script>
+</body>
+
+</html>

@@ -29,14 +29,17 @@ from phone_agent.config.apps import list_supported_apps
 from phone_agent.model import ModelConfig
 
 
-def check_system_requirements() -> bool:
+def check_system_requirements(device_id: str | None = None) -> bool:
     """
     Check system requirements before running the agent.
 
     Checks:
     1. ADB tools installed
-    2. At least one device connected
+    2. At least one device connected (or specified device)
     3. ADB Keyboard installed on the device
+
+    Args:
+        device_id: Optional specific device to check. If provided, only checks that device.
 
     Returns:
         True if all checks pass, False otherwise.
@@ -125,11 +128,19 @@ def check_system_requirements() -> bool:
     # Check 3: ADB Keyboard installed
     print("3. Checking ADB Keyboard...", end=" ")
     try:
+        # Build command with optional device specifier
+        cmd = ["adb"]
+        if device_id:
+            cmd.extend(["-s", device_id])
+        cmd.extend(["shell", "ime", "list", "-s"])
+        
         result = subprocess.run(
-            ["adb", "shell", "ime", "list", "-s"],
+            cmd,
             capture_output=True,
             text=True,
             timeout=10,
+            encoding="utf-8",
+            errors="replace",
         )
         ime_list = result.stdout.strip()
 
@@ -464,7 +475,7 @@ def main():
         return
 
     # Run system requirements check before proceeding
-    if not check_system_requirements():
+    if not check_system_requirements(args.device_id):
         sys.exit(1)
 
     # Check model API connectivity and model availability
