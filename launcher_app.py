@@ -283,11 +283,29 @@ def disconnect_device(device_id: str) -> tuple[bool, str]:
             errors="replace"
         )
         
+        # Also remove from remembered devices
+        remove_remembered_device(device_id)
         discover_devices()  # Refresh device list
         return True, "Disconnected"
     
     except Exception as e:
         return False, str(e)
+
+def hide_device(device_id: str) -> tuple[bool, str]:
+    """
+    Hide a device from the list without disconnecting ADB.
+    The device will reappear on next refresh if still connected.
+    """
+    global devices
+    
+    # Remove from remembered devices (won't auto-reconnect on startup)
+    remove_remembered_device(device_id)
+    
+    # Remove from current devices dict (temporary hide)
+    if device_id in devices:
+        del devices[device_id]
+    
+    return True, "设备已从列表移除。如仍在连接状态，刷新后将重新显示。"
 
 def enable_wifi_debug(device_id: str, port: int = 5555) -> tuple[bool, str, str | None]:
     """
@@ -540,8 +558,14 @@ def pair(req: PairRequest):
 
 @app.post("/api/devices/{device_id}/disconnect")
 def disconnect(device_id: str):
-    """Disconnect from a device."""
+    """Disconnect from a device (breaks ADB connection)."""
     success, message = disconnect_device(device_id)
+    return {"success": success, "message": message}
+
+@app.post("/api/devices/{device_id}/hide")
+def hide(device_id: str):
+    """Hide device from list without disconnecting ADB."""
+    success, message = hide_device(device_id)
     return {"success": success, "message": message}
 
 @app.post("/api/devices/{device_id}/wifi-debug")

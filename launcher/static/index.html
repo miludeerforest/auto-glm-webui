@@ -984,10 +984,10 @@
         }
 
         async function removeDevice(deviceId) {
-            if (!confirm(`确定断开并移除设备 ${deviceId}？`)) return;
+            if (!confirm(`确定从列表移除设备 ${deviceId}？\n\n（设备连接不会断开，刷新后如仍连接会重新显示）`)) return;
 
             try {
-                const res = await fetch(`/api/devices/${deviceId}/disconnect`, {
+                const res = await fetch(`/api/devices/${deviceId}/hide`, {
                     method: 'POST'
                 });
                 const data = await res.json();
@@ -996,7 +996,9 @@
                     if (selectedDeviceId === deviceId) {
                         selectedDeviceId = null;
                     }
-                    refreshDevices();
+                    // Don't refresh, just re-render with current data
+                    devices = devices.filter(d => d.device_id !== deviceId);
+                    renderDeviceList();
                 } else {
                     alert('移除失败: ' + data.message);
                 }
